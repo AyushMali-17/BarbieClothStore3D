@@ -70,7 +70,140 @@
             floor.rotation.x = -Math.PI / 2;
             scene.add(floor);
 
+            // Create player (represented as a cylinder for now)
+            const playerGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1.6, 32);
+            const playerMaterial = new THREE.MeshPhongMaterial({color: 0xffd700});
+            player = new THREE.Mesh(playerGeometry, playerMaterial);
+            player.position.y = 0.8; // Half of player's height
+            scene.add(player);
+
+            // Create clothing items in the scene
+            createClothingItems();
+
+            createInventoryButtons();
+            setupMovementControls();
+            animate();
+        }
+
+        function createClothingItems() {
+            inventory.forEach((item, index) => {
+                const clothingGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                const clothingMaterial = new THREE.MeshPhongMaterial({color: item.color});
+                const clothingItem = new THREE.Mesh(clothingGeometry, clothingMaterial);
+                clothingItem.position.set(index * 2 - 2, 0.25, -3);
+                clothingItem.userData = {name: item.name, price: item.price};
+                scene.add(clothingItem);
+            });
+        }
+
+        function createInventoryButtons() {
+            const inventoryDiv = document.getElementById('inventory');
+            inventory.forEach(item => {
+                const button = document.createElement('button');
+                button.textContent = `${item.name} ($${item.price})`;
+                button.onclick = () => tryOnClothing(item);
+                inventoryDiv.appendChild(button);
+            });
+        }
+
+        function tryOnClothing(item) {
+            if (playerMoney >= item.price) {
+                playerMoney -= item.price;
+                updateMoneyDisplay();
+                
+                // Change player color to represent wearing the item
+                player.material.color.setHex(item.color);
+            } else {
+                alert("Not enough money!");
+            }
+        }
+
+        function updateMoneyDisplay() {
+            const infoDiv = document.getElementById('info');
+            infoDiv.textContent = `Barbie 3D Clothes Store - Money: $${playerMoney}`;
+        }
+
+        function setupMovementControls() {
+            document.addEventListener('keydown', onKeyDown, false);
+            document.addEventListener('keyup', onKeyUp, false);
+        }
+
+        function onKeyDown(event) {
+            switch (event.code) {
+                case 'ArrowUp':
+                case 'KeyW':
+                    moveForward = true;
+                    break;
+                case 'ArrowLeft':
+                case 'KeyA':
+                    moveLeft = true;
+                    break;
+                case 'ArrowDown':
+                case 'KeyS':
+                    moveBackward = true;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    moveRight = true;
+                    break;
+            }
+        }
+
+        function onKeyUp(event) {
+            switch (event.code) {
+                case 'ArrowUp':
+                case 'KeyW':
+                    moveForward = false;
+                    break;
+                case 'ArrowLeft':
+                case 'KeyA':
+                    moveLeft = false;
+                    break;
+                case 'ArrowDown':
+                case 'KeyS':
+                    moveBackward = false;
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    moveRight = false;
+                    break;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
             
+            // Movement logic
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveRight) - Number(moveLeft);
+            direction.normalize();
+
+            if (moveForward || moveBackward) velocity.z -= direction.z * 0.01;
+            if (moveLeft || moveRight) velocity.x -= direction.x * 0.01;
+
+            player.translateX(-velocity.x);
+            player.translateZ(-velocity.z);
+
+            camera.position.x = player.position.x;
+            camera.position.z = player.position.z + 5;
+
+            velocity.multiplyScalar(0.9);
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        window.addEventListener('resize', onWindowResize, false);
+
+        init();
+        updateMoneyDisplay();
     </script>
 </body>
 </html>
